@@ -9,11 +9,11 @@ import numpy as np
 from dj_graph import DJSetlistGraph
 from load_songs import load_songs_from_excel
 
-# Load Songs
+#load Songs
 file_path = "music_with_engineered.xlsx"
 songs = load_songs_from_excel(file_path)
 
-# Genre Mapping
+#genre mapping
 def map_genre(raw_genre):
     genre = str(raw_genre).lower() if raw_genre else "other"
     if any(keyword in genre for keyword in ["house", "deep tech", "techno"]):
@@ -43,7 +43,7 @@ GENRE_COLOR_MAP = {
     "Other": "gray"
 }
 
-# Initialize Streamlit session
+#init streamlit session
 if "page" not in st.session_state:
     st.session_state.page = "home"
 if "generated_setlist" not in st.session_state:
@@ -53,19 +53,19 @@ def go_to(page):
     st.session_state.page = page
     st.rerun()
 
-# Key compatibility simple scoring
+
 def key_compatibility(key1, key2):
     if not key1 or not key2:
-        return 5  # big penalty
+        return 5
     if key1 == key2:
-        return 0  # perfect
-    if key1.split(" ")[0] == key2.split(" ")[0]:  # Same root note
+        return 0
+    if key1.split(" ")[0] == key2.split(" ")[0]:
         return 1
-    if key1[-1] == key2[-1]:  # Same minor/major
+    if key1[-1] == key2[-1]: #same minor/major
         return 2
     return 4
 
-# ========= HOME PAGE ==========
+#homepage
 if st.session_state.page == "home":
     st.set_page_config(page_title="DJ Setlist App", layout="centered")
 
@@ -114,7 +114,7 @@ if st.session_state.page == "home":
         if st.button("Cluster Songs"):
             go_to("cluster_songs")
 
-# ========= VISUALIZER PAGE ==========
+#visualizer page
 elif st.session_state.page == "visualizer":
     st.set_page_config(page_title="DJ Visualizer", layout="wide")
 
@@ -147,7 +147,7 @@ elif st.session_state.page == "visualizer":
     dj_graph = DJSetlistGraph()
     dj_graph.build_graph(filtered_songs)
     G = dj_graph.graph
-# ========= GENERATE SETLIST PAGE ==========
+#generate setlist page
 elif st.session_state.page == "generate_setlist":
     st.set_page_config(page_title="DJ Setlist Generator", layout="centered")
 
@@ -182,7 +182,6 @@ elif st.session_state.page == "generate_setlist":
             st.markdown(f"**{idx}. {song.name}** by *{song.artist}* — {song.bpm} BPM — {song.key}")
 
     if st.session_state.generated_setlist and st.button("Smoothest Setlist (Dijkstra)", use_container_width=True):
-        # Build weighted graph for Dijkstra
         G = nx.DiGraph()
 
         for idx_a, song_a in enumerate(st.session_state.generated_setlist):
@@ -191,7 +190,7 @@ elif st.session_state.page == "generate_setlist":
                     continue
                 bpm_diff = abs(song_a.bpm - song_b.bpm)
                 key_penalty = key_compatibility(song_a.key, song_b.key)
-                total_weight = bpm_diff + (key_penalty * 2)  # key penalty heavier
+                total_weight = bpm_diff + (key_penalty * 2)
                 G.add_edge(idx_a, idx_b, weight=total_weight)
 
         # Find shortest path visiting all nodes
@@ -217,7 +216,7 @@ elif st.session_state.page == "generate_setlist":
         for idx, song in enumerate(smooth_list, start=1):
             st.markdown(f"**{idx}. {song.name}** by *{song.artist}* — {song.bpm} BPM — {song.key}")
 
-# ========= CLUSTER SONGS PAGE ==========
+#cluster songs page
 elif st.session_state.page == "cluster_songs":
     st.set_page_config(page_title="DJ Cluster Songs", layout="wide")
 

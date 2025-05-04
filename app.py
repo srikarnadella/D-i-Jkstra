@@ -7,11 +7,11 @@ import random
 from dj_graph import DJSetlistGraph
 from load_songs import load_songs_from_excel
 
-# Load Songs
+#load Songs
 file_path = "music_with_engineered.xlsx"
 songs = load_songs_from_excel(file_path)
 
-# Genre Mapping
+#map genres
 def map_genre(raw_genre):
     genre = str(raw_genre).lower() if raw_genre else "other"
     if any(keyword in genre for keyword in ["house", "deep tech", "techno"]):
@@ -31,7 +31,7 @@ def map_genre(raw_genre):
     else:
         return "Other"
 
-# Page State Management
+#stage management
 if "page" not in st.session_state:
     st.session_state.page = "home"
     
@@ -40,11 +40,10 @@ def go_to(page):
     st.rerun()
 
 
-# ========= HOME PAGE =========
+#hom epage
 if st.session_state.page == "home":
     st.set_page_config(page_title="DJ Setlist App", layout="centered")
     
-    # Custom CSS for modern styling
     st.markdown(
         """
         <style>
@@ -98,7 +97,7 @@ if st.session_state.page == "home":
         if st.button("Generate Setlist"):
             go_to("generate_setlist")
 
-# ========= VISUALIZER PAGE =========
+#visualizer page
 elif st.session_state.page == "visualizer":
     st.set_page_config(page_title="DJ Visualizer", layout="wide")
     
@@ -107,7 +106,7 @@ elif st.session_state.page == "visualizer":
 
     st.title("DJ Setlist Visualizer")
 
-    # Sidebar Filters
+    #sidebar filters
     st.sidebar.title("Filters")
     main_genres = list(set(map_genre(song.genre) for song in songs))
     selected_genres = st.sidebar.multiselect("Select Genres:", options=main_genres, default=main_genres)
@@ -116,7 +115,7 @@ elif st.session_state.page == "visualizer":
     bpm_range = st.sidebar.slider("BPM Range", 60, 200, (60, 200))
     max_songs = st.sidebar.number_input("Max number of songs to display:", min_value=5, max_value=100, value=30)
 
-    # Filter Songs
+    #fitler songs
     filtered_songs = []
     for song in songs:
         main_genre = map_genre(song.genre)
@@ -128,12 +127,12 @@ elif st.session_state.page == "visualizer":
 
     st.write(f"Showing {len(filtered_songs)} songs based on your filters.")
 
-    # Build Graph
+    #build Graph
     dj_graph = DJSetlistGraph()
     dj_graph.build_graph(filtered_songs)
     G = dj_graph.graph
 
-    # Build Network
+    #build Network
     net = Network(height="100vh", width="100vw", bgcolor="#0e0e0e", font_color="white", directed=True)
 
     net.barnes_hut(
@@ -184,7 +183,7 @@ elif st.session_state.page == "visualizer":
     net.save_graph(path)
     st.components.v1.html(open(path, 'r', encoding='utf-8').read(), height=1000, scrolling=False)
 
-# ========= GENERATE SETLIST PAGE =========
+#generate setlist
 elif st.session_state.page == "generate_setlist":
     st.set_page_config(page_title="DJ Setlist Generator", layout="centered")
     
@@ -211,7 +210,6 @@ elif st.session_state.page == "generate_setlist":
                 continue
             filtered.append(song)
 
-        # Sort filtered songs by BPM (ascending)
         filtered = sorted(filtered, key=lambda s: s.bpm)
 
         generated_setlist = filtered[:max_setlist_songs]

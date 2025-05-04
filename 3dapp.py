@@ -41,7 +41,7 @@ GENRE_COLOR_MAP = {
     "Other": "gray"
 }
 
-# Streamlit page control
+#main page control
 if "page" not in st.session_state:
     st.session_state.page = "home"
 if "generated_setlist" not in st.session_state:
@@ -51,7 +51,7 @@ def go_to(page):
     st.session_state.page = page
     st.rerun()
 
-# ========= HOME PAGE ==========
+#home page
 if st.session_state.page == "home":
     st.set_page_config(page_title="DJ Setlist App", layout="centered")
 
@@ -101,7 +101,7 @@ if st.session_state.page == "home":
         if st.button("Generate Setlist"):
             go_to("generate_setlist")
 
-# ========= VISUALIZER PAGE ==========
+#visualizer page
 elif st.session_state.page == "visualizer":
     st.set_page_config(page_title="DJ Visualizer", layout="wide")
 
@@ -186,7 +186,7 @@ elif st.session_state.page == "visualizer":
 
     st.plotly_chart(fig, use_container_width=True)
 
-# ========= GENERATE SETLIST PAGE ==========
+#generate setlist page
 elif st.session_state.page == "generate_setlist":
     st.set_page_config(page_title="DJ Setlist Generator", layout="centered")
 
