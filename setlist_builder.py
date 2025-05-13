@@ -17,7 +17,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 
 from dj_graph import DJSetlistGraph
-from load_songs import load_songs_from_excel
+from legacydata.load_songs import load_songs_from_excel
 
 # ─── Load & Cache Songs ─────────────────────────────────────────────────────────
 @st.cache_data
