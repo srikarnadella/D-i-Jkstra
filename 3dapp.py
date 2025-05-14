@@ -377,6 +377,10 @@ elif st.session_state.page == "generate_setlist":
         Song = namedtuple("Song", ["name", "artist", "genre", "bpm", "key"])
         st.session_state.generated_setlist = [Song(t['track_title'], t['artist'], t['genre'], t['bpm'], t['key']) for t in best_set]
         st.success(f"Generated {len(st.session_state.generated_setlist)} song setlist!")
+    if st.session_state.get("generated_setlist"):
+        st.subheader("Your Generated Setlist")
+        for i, song in enumerate(st.session_state.generated_setlist, 1):
+            st.write(f"{i}. {song.name} — {song.artist} | {song.bpm} BPM | Key {song.key}")
 
     if st.session_state.generated_setlist and st.button("Visualize This Setlist", use_container_width=True):
         G = nx.DiGraph()
