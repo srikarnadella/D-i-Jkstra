@@ -1,4 +1,4 @@
-from load_songs import load_songs_from_excel
+from legacydata.load_songs import load_songs_from_excel
 from dj_graph import DJSetlistGraph
 from legacyV2.visualize_graph import visualize_graph_interactive
 import os

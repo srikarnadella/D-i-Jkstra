@@ -7,7 +7,7 @@ from sklearn.cluster import KMeans
 import numpy as np
 
 from dj_graph import DJSetlistGraph
-from load_songs import load_songs_from_excel
+from legacydata.load_songs import load_songs_from_excel
 
 #load Songs
 file_path = "music_with_engineered.xlsx"
