@@ -1,21 +1,67 @@
 # D-i-Jkstra
-**Currently in an MVP form** <br>
-I made this website to be a Graphical Representation and Interpretation of a DJ setlist. As someone who DJ's in their freetime I wanted to bridge the gap between my hobbies and CS and I after completing my DSA 2 class I had a thought about representing a setlist or a library of songs as a directed graph with each song being its own node with values such as name, bpm, key, artist, and a few engineered attributes and each edge being a representation of a transition.
 
-I broke down this app into two key functions: Generating setlists and graphically representing a set.
+A graph-powered DJ setlist builder built by a DJ who wanted to bridge music and computer science. After taking DSA 2, I realized a song library is just a weighted directed graph — and setlist building is a shortest-path problem.
 
-1. **Generating Setlists**  
-   - **Filtering**: narrow down your library by genre, BPM range, energy, danceability, and maximum number of tracks.  
-   - **Dijkstra-style optimization**: treat each song as a node and edges weighted by  
-     - absolute BPM difference  
-     - key compatibility penalty  
-     Then compute the “shortest path” through the filtered songs to produce the **smoothest possible** setlist.
+Every song is a node with attributes (title, artist, BPM, Camelot key, genre). Every edge between two songs represents a transition, weighted by BPM delta and harmonic compatibility. The app uses that structure to generate, visualize, and analyze sets.
 
-2. **Graphical Visualization**  
-   - **2D force-directed layout** and **3D floating view** (Plotly) to explore your set graphically.  
-   - **Node size** reflects energy, **node color** reflects genre; **edge color** indicates transition quality.  
-   - Rich **hover tooltips** show song name, artist, BPM, and key on demand.
+## Features
 
-Features for the future:
-- Setlist building tool (accept songs as you go)
-- Music finding (swipe based music finder)
+### Generate Setlist
+Specify a time window (e.g. 11 PM – 1 AM) and a vibe (Frat Party, Sunset, Rave, etc.). The engine:
+1. Scores each track using a vibe profile (BPM range bonuses, genre bonuses)
+2. Builds a harmonic adjacency graph using Camelot wheel compatibility + BPM delta constraints
+3. Runs a DP longest-path algorithm to fill the time budget
+4. Optionally auto-segments the set into three energy phases (keys 1–4 → 5–8 → 9–12) for a natural arc
+
+After generation, you can reorder with **Smoothest Path** (greedy nearest-neighbor minimizing BPM + key delta), download as CSV, and visualize the set.
+
+A **Quality Score** (0–100), harmonic transition rate, and average BPM delta are shown for every setlist.
+
+### Dijkstra Path Finder
+The app's namesake feature. Select any two songs from your library and the app finds the **shortest harmonic path** between them using Dijkstra's algorithm on the full harmonic adjacency graph. Edge weights are `abs(bpm_diff) + key_compat_penalty`. Results show each transition step with key compatibility highlighted.
+
+### Visualizer
+Explore the full harmonic compatibility graph of your library in 3D or 2D. Unlike a simple linked list, the graph connects **every pair of songs** that are Camelot-compatible within the BPM threshold — revealing hub songs that can transition to many others. Edge count is shown in the sidebar.
+
+- **3D view**: Plotly Scatter3d with stable seeded positions
+- **2D view**: force-directed spring layout
+- Edge color by BPM delta: green ≤2, yellow ≤5, red >5
+- Node color by genre
+- Hover tooltips: song name, artist, BPM, key
+
+### Energy Timeline
+After generating a setlist, a BPM line chart shows the energy arc across the set. Transition markers are colored by key compatibility (green = same key, yellow = harmonic neighbor, red = non-harmonic) so you can see where the rough transitions are at a glance.
+
+### Library
+Browse, search, and filter all ~430 tracks. Add tracks manually with Camelot key validation.
+
+### Cluster Songs
+KMeans + PCA on `[BPM, Camelot key number]` to find natural groupings in the library. Useful for seeing which songs cluster together and building sets around them.
+
+## Tech Stack
+
+- **Streamlit** — UI and routing
+- **NetworkX** — graph construction, Dijkstra's algorithm
+- **Plotly** — all visualizations (3D/2D graph, energy timeline, cluster scatter, genre bar)
+- **scikit-learn** — KMeans + PCA for clustering
+- **SQLite** — song library storage (~430 tracks)
+
+## Running Locally
+
+```bash
+pip install -r requirements.txt
+streamlit run 3dapp.py
+```
+
+## Architecture
+
+The app is split into focused modules — no business logic in the Streamlit entry point:
+
+| File | Responsibility |
+|---|---|
+| `3dapp.py` | UI routing and page render functions only |
+| `models.py` | `Song` namedtuple, all constants, `VIBE_CONFIG`, Camelot key helpers |
+| `db.py` | SQLite I/O with `@st.cache_data` |
+| `setlist_engine.py` | All algorithms: scoring, DP path, Dijkstra, greedy reorder, clustering |
+| `viz.py` | All Plotly figure builders |
+| `dj_graph.py` | `DJSetlistGraph` wrapping NetworkX DiGraph |

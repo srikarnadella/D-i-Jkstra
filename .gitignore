@@ -1,2 +1,27 @@
+# Environment
 .env
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Streamlit
+.cache
+.streamlit/
+
+# Data exports / generated files
+*.gml
+
+# Project-specific
 testers/
+archive/
+legacydata/
+legacyV1/
+legacyV2/
+lib/
+
+# Claude
+.claude/
+
+# macOS
+.DS_Store

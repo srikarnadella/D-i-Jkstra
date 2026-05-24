@@ -1,5 +1,8 @@
 import networkx as nx
 
+from models import get_harmonic_neighbors, MAX_HARMONIC_BPM_DELTA
+
+
 class DJSetlistGraph:
     def __init__(self):
         self.graph = nx.DiGraph()
@@ -30,3 +33,15 @@ class DJSetlistGraph:
             self.add_song(song)
             if i > 0:
                 self.add_transition(songs[i - 1], song)
+
+    def build_harmonic_graph(self, songs):
+        """Connect every pair of songs that are harmonically compatible."""
+        for song in songs:
+            self.add_song(song)
+        for a in songs:
+            for b in songs:
+                if a is b:
+                    continue
+                if (b.key in get_harmonic_neighbors(a.key)
+                        and abs(a.bpm - b.bpm) <= MAX_HARMONIC_BPM_DELTA):
+                    self.add_transition(a, b)
