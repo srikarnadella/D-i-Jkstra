@@ -9,6 +9,7 @@ from models import (
     MID_SEGMENT_FRACTION,
     LATE_SEGMENT_FRACTION,
     MAX_HARMONIC_BPM_DELTA,
+    BPM_OCTAVE_DELTA,
     SCORE_JITTER,
     VIBE_CONFIG,
     parse_key,
@@ -17,7 +18,16 @@ from models import (
 )
 
 
-def score_track(row: dict, vibe: str) -> float:
+def _bpm_compatible(bpm1: float, bpm2: float) -> bool:
+    """True if two BPMs are within MAX_HARMONIC_BPM_DELTA, or within BPM_OCTAVE_DELTA
+    of each other when one is doubled (handles half-time / double-time mixing)."""
+    direct = abs(bpm1 - bpm2) <= MAX_HARMONIC_BPM_DELTA
+    octave_up = abs(bpm1 * 2 - bpm2) <= BPM_OCTAVE_DELTA
+    octave_down = abs(bpm1 - bpm2 * 2) <= BPM_OCTAVE_DELTA
+    return direct or octave_up or octave_down
+
+
+def score_track(row: dict, vibe: str, rng: random.Random | None = None) -> float:
     bpm = row.get("bpm", 0) or 0
     genre = str(row.get("genre") or "").strip().lower()
     cfg = VIBE_CONFIG.get(vibe.lower(), {})
@@ -34,43 +44,69 @@ def score_track(row: dict, vibe: str) -> float:
         if keyword in genre:
             score += bonus
 
-    score += random.uniform(0, SCORE_JITTER)
+    _rng = rng or random
+    score += _rng.uniform(0, SCORE_JITTER)
     return score
 
 
 def build_segment_graph(tracks: list[dict], total_duration_seconds: float) -> list[dict]:
     n = len(tracks)
-    graph: list[list[int]] = [[] for _ in range(n)]
+    if n == 0:
+        return []
 
+    # Build harmonic adjacency matrix
+    neighbors: list[list[int]] = [[] for _ in range(n)]
     for i in range(n):
         key1 = str(tracks[i].get("key") or "").strip().upper()
         bpm1 = tracks[i].get("bpm", 0) or 0
+        hn1 = get_harmonic_neighbors(key1)
         for j in range(n):
             if i == j:
                 continue
             key2 = str(tracks[j].get("key") or "").strip().upper()
             bpm2 = tracks[j].get("bpm", 0) or 0
-            if key2 in get_harmonic_neighbors(key1) and abs(bpm1 - bpm2) <= MAX_HARMONIC_BPM_DELTA:
-                graph[i].append(j)
+            if key2 in hn1 and _bpm_compatible(bpm1, bpm2):
+                neighbors[i].append(j)
 
-    dp: list[tuple[float, list[int]]] = [(TRACK_DURATION_SECONDS, [i]) for i in range(n)]
-    for i in range(n):
-        for j in graph[i]:
-            new_time = dp[i][0] + TRACK_DURATION_SECONDS
-            if new_time <= total_duration_seconds and new_time > dp[j][0]:
-                dp[j] = (new_time, dp[i][1] + [j])
+    max_tracks = max(1, int(total_duration_seconds // TRACK_DURATION_SECONDS))
+    best_path: list[int] = []
 
-    best = max(dp, key=lambda x: (x[0] <= total_duration_seconds, x[0], random.random()))
-    return [tracks[i] for i in best[1]]
+    # Multi-start greedy: try each song as opener, extend by smoothest BPM delta each step.
+    # This is O(n²) per start and correctly handles all index orderings — unlike the old
+    # single-pass DP which silently dropped paths through out-of-order indices.
+    for start in range(n):
+        path = [start]
+        visited = {start}
+        while len(path) < max_tracks:
+            cur = path[-1]
+            cur_bpm = tracks[cur].get("bpm", 0) or 0
+            best_nb = min(
+                (nb for nb in neighbors[cur] if nb not in visited),
+                key=lambda nb: abs(cur_bpm - (tracks[nb].get("bpm", 0) or 0)),
+                default=None,
+            )
+            if best_nb is None:
+                break
+            path.append(best_nb)
+            visited.add(best_nb)
+
+        if len(path) > len(best_path):
+            best_path = path
+
+    return [tracks[i] for i in best_path]
 
 
 def build_harmonic_graph_setlist(
     scored_tracks: list[dict],
     total_duration_seconds: float,
     use_auto_segmentation: bool = True,
+    bpm_range: tuple[float, float] | None = None,
 ) -> list[dict]:
     eligible_tracks = [
-        t for t in scored_tracks if t.get("vibe_score", 0) > 0 and t.get("key")
+        t for t in scored_tracks
+        if t.get("vibe_score", 0) > 0
+        and t.get("key")
+        and (bpm_range is None or bpm_range[0] <= (t.get("bpm") or 0) <= bpm_range[1])
     ]
     if not eligible_tracks:
         return []
@@ -134,7 +170,7 @@ def find_harmonic_path(songs: list[Song], source_name: str, target_name: str) ->
         for b in songs:
             if a.name == b.name:
                 continue
-            if b.key in get_harmonic_neighbors(a.key) and abs(a.bpm - b.bpm) <= MAX_HARMONIC_BPM_DELTA:
+            if b.key in get_harmonic_neighbors(a.key) and _bpm_compatible(a.bpm, b.bpm):
                 cost = abs(a.bpm - b.bpm) + _key_compat_score(a.key, b.key) * 2
                 G.add_edge(a.name, b.name, cost=cost)
     try:

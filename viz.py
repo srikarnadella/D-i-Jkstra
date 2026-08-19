@@ -148,16 +148,17 @@ def build_2d_figure(
     )
 
 
-def cluster_figure(df: pd.DataFrame) -> go.Figure:
+def cluster_figure(df: pd.DataFrame, cluster_labels: dict | None = None) -> go.Figure:
     colors = px.colors.qualitative.Bold
     fig = go.Figure()
     for cid in sorted(df["cluster"].unique()):
         sub = df[df["cluster"] == cid]
+        label = (cluster_labels or {}).get(int(cid), f"Cluster {cid}")
         fig.add_trace(go.Scatter(
             x=sub["pc1"], y=sub["pc2"],
             mode="markers",
             marker=dict(color=colors[int(cid) % len(colors)], size=12),
-            name=f"Cluster {cid}",
+            name=label,
             hovertemplate=(
                 "<b>%{customdata[0]}</b><br>"
                 "%{customdata[1]}<br>"
@@ -167,8 +168,8 @@ def cluster_figure(df: pd.DataFrame) -> go.Figure:
             customdata=sub[["name", "artist", "bpm", "key"]].values,
         ))
     fig.update_layout(
-        xaxis_title="PC1",
-        yaxis_title="PC2",
+        xaxis_title="BPM axis (PC1)",
+        yaxis_title="Key axis (PC2)",
         paper_bgcolor="#0e0e0e",
         plot_bgcolor="#0e0e0e",
         font_color="white",
@@ -178,9 +179,12 @@ def cluster_figure(df: pd.DataFrame) -> go.Figure:
     return fig
 
 
-def energy_timeline_figure(setlist: list[Song]) -> go.Figure:
-    """BPM line chart for a setlist with markers colored by key transition quality."""
-    x = list(range(1, len(setlist) + 1))
+def energy_timeline_figure(setlist: list[Song], x_labels: list[str] | None = None) -> go.Figure:
+    """BPM line chart for a setlist with markers colored by key transition quality.
+
+    Pass x_labels (e.g. clock times) to override the default Track # x-axis.
+    """
+    x = x_labels if x_labels else list(range(1, len(setlist) + 1))
     y = [s.bpm for s in setlist]
     colors = ["#888888"] + [
         {"Same": "#00FF00", "Harmonic": "#FFFF00"}.get(
@@ -200,8 +204,63 @@ def energy_timeline_figure(setlist: list[Song]) -> go.Figure:
     fig.update_layout(
         paper_bgcolor="#0e0e0e", plot_bgcolor="#0e0e0e",
         font_color="white",
-        xaxis_title="Track #", yaxis_title="BPM",
+        xaxis_title="Time" if x_labels else "Track #",
+        yaxis_title="BPM",
         margin=dict(l=20, r=20, t=10, b=20),
+    )
+    return fig
+
+
+# ── Camelot wheel ─────────────────────────────────────────────────────────────
+
+def camelot_wheel_figure(songs: list) -> go.Figure:
+    """Polar chart showing song distribution across the 24 Camelot key slots (1A–12B)."""
+    from models import parse_key
+
+    counts: dict[str, int] = {}
+    for s in songs:
+        num, mode = parse_key(s.key)
+        if num is not None and mode:
+            slot = f"{num}{mode}"
+            counts[slot] = counts.get(slot, 0) + 1
+
+    # Build all 24 slots in wheel order: 1A,1B,2A,2B,...,12A,12B
+    slots, slot_counts, colors = [], [], []
+    for num in range(1, 13):
+        for mode in ("A", "B"):
+            slot = f"{num}{mode}"
+            slots.append(slot)
+            slot_counts.append(counts.get(slot, 0))
+            colors.append("#00BFFF" if mode == "A" else "#FF69B4")
+
+    fig = go.Figure(go.Barpolar(
+        r=slot_counts,
+        theta=slots,
+        width=[1] * 24,
+        marker_color=colors,
+        marker_line_color="#0e0e0e",
+        marker_line_width=1,
+        hovertemplate="<b>%{theta}</b><br>%{r} songs<extra></extra>",
+    ))
+    fig.update_layout(
+        polar=dict(
+            bgcolor="#1a1a1a",
+            radialaxis=dict(showticklabels=False, gridcolor="#333"),
+            angularaxis=dict(
+                tickfont=dict(color="white", size=11),
+                gridcolor="#333",
+            ),
+        ),
+        paper_bgcolor="#0e0e0e",
+        font_color="white",
+        showlegend=False,
+        margin=dict(l=40, r=40, t=40, b=40),
+        annotations=[
+            dict(text="A = minor (blue)", x=0.02, y=0.02, xref="paper", yref="paper",
+                 font=dict(color="#00BFFF", size=11), showarrow=False),
+            dict(text="B = major (pink)", x=0.02, y=-0.04, xref="paper", yref="paper",
+                 font=dict(color="#FF69B4", size=11), showarrow=False),
+        ],
     )
     return fig
 

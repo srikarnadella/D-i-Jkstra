@@ -12,6 +12,7 @@ FIRST_SEGMENT_CAP_SECONDS = 1800  # opening segment is capped at 30 min
 MID_SEGMENT_FRACTION = 0.6
 LATE_SEGMENT_FRACTION = 0.4
 MAX_HARMONIC_BPM_DELTA = 25     # max BPM difference for a harmonic edge
+BPM_OCTAVE_DELTA = 8            # tolerance when matching half-time/double-time BPMs
 SCORE_JITTER = 0.3              # random tiebreak added to vibe score
 
 # ── Vibe configuration ────────────────────────────────────────────────────────
