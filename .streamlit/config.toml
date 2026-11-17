@@ -1,0 +1,46 @@
+# True-black flat (taste-skill app style, seed 1676045989), face: booth amber on the data.
+# Elevation by lightness alone: #000 ground, #111 card, #2a2a2a nested. Colour lives on data marks only.
+
+[client]
+toolbarMode = "minimal"        # no Deploy button / dev menu in the shell
+showSidebarNavigation = false
+
+[theme]
+base = "dark"
+primaryColor = "#ffffff"       # controls invert (white pill, black label); the accent never touches chrome
+backgroundColor = "#000000"
+secondaryBackgroundColor = "#111111"
+textColor = "#ffffff"
+borderColor = "#2a2a2a"
+showSidebarBorder = true
+linkColor = "#ffffff"
+linkUnderline = false
+font = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+baseFontSize = 16
+baseFontWeight = 500
+headingFontSizes = ["28px", "21px", "18px"]
+headingFontWeights = [700, 600, 600]
+metricValueFontSize = "28px"
+metricValueFontWeight = 600
+baseRadius = "14px"
+buttonRadius = "999px"
+chartCategoricalColors = ["#f2b33d", "#e6e6e6", "#6b6b6b"]
+dataframeBorderColor = "#1a1a1a"
+dataframeHeaderBackgroundColor = "#000000"
+# status: green = compatible / done, red = a clash, amber = the data hue; info boxes stay neutral
+greenColor = "#3fc07a"
+greenBackgroundColor = "#172a1d"
+greenTextColor = "#3fc07a"
+redColor = "#e5484d"
+redBackgroundColor = "#2c1a20"
+redTextColor = "#e5566f"
+orangeColor = "#e5a93b"
+orangeBackgroundColor = "#2b2414"
+orangeTextColor = "#e5a93b"
+blueColor = "#c8c8c8"
+blueBackgroundColor = "#111111"
+blueTextColor = "#c8c8c8"
+
+[theme.sidebar]
+backgroundColor = "#000000"
+secondaryBackgroundColor = "#111111"

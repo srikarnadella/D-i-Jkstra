@@ -5,9 +5,13 @@ __pycache__/
 *.pyc
 *.pyo
 
-# Streamlit
+# Streamlit (the theme is part of the app; secrets are not)
 .cache
-.streamlit/
+.streamlit/*
+!.streamlit/config.toml
+
+# taste-skill working files (screenshots, inspector reports)
+.taste-skill/
 
 # Data exports / generated files
 *.gml
