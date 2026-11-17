@@ -125,3 +125,54 @@ class TestMapGenre:
     def test_case_insensitive(self):
         assert map_genre("HOUSE") == "Dance/House"
         assert map_genre("Pop") == "Pop"
+
+
+from models import to_camelot, parse_duration, fmt_duration, Song
+
+
+class TestToCamelot:
+    @pytest.mark.parametrize("raw,expected", [
+        ("Am", "8A"), ("C", "8B"), ("Abm", "1A"), ("G#m", "1A"), ("B", "1B"), ("E", "12B"),
+        ("F#m", "11A"), ("Bb", "6B"), ("Ebmaj", "5B"), ("8a", "8A"), (" 12B ", "12B"), ("", ""),
+    ])
+    def test_conversions(self, raw, expected):
+        assert to_camelot(raw) == expected
+
+    def test_garbage_fails_validation(self):
+        assert parse_key(to_camelot("hello"))[0] is None
+
+
+class TestDuration:
+    def test_parse(self):
+        assert parse_duration("3:45") == 225
+        assert parse_duration(200) == 200
+        assert parse_duration("") is None
+        assert parse_duration(float("nan")) is None
+        assert parse_duration("abc") is None
+
+    def test_fmt(self):
+        assert fmt_duration(225) == "3:45"
+        assert fmt_duration(3725) == "1:02:05"
+
+    def test_song_default_duration(self):
+        assert Song("a", "b", "c", 120, "8A").duration == 210
+
+
+
+from models import track_energy, parse_energy
+
+
+class TestEnergy:
+    def test_rating_wins(self):
+        assert track_energy(128, 3) == 3
+
+    def test_estimate_clamped(self):
+        assert track_energy(90) == 3 and track_energy(140) == 9
+        assert track_energy(60) == 1 and track_energy(200) == 10
+
+    @pytest.mark.parametrize("raw,expected", [
+        ("8A - Energy 6", 6), ("Energy: 7", 7), (5, 5), ("5", 5), ("Energy 11", None),
+        ("great track 2019", None), (None, None), (float("nan"), None),
+    ])
+    def test_parse_energy(self, raw, expected):
+        assert parse_energy(raw) == expected
